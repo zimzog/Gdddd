@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Binance Ордери Монітор</title>
+  <title>Binance Ордери</title>
   <style>
     body {
       margin: 0;
@@ -30,45 +30,60 @@
       flex-direction: column;
       gap: 16px;
     }
-    .card {
+    .settings-card {
       background: #fff;
       border: 1px solid #ddd;
       border-radius: 12px;
-      padding: 16px;
+      padding: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .settings-header {
+      background: #ffeb3b;
+      color: #000;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      text-align: center;
+      user-select: none;
+    }
+    .settings-body {
+      padding: 12px;
+      display: none;
+    }
+    .settings-body.active {
+      display: block;
     }
     label {
       display: block;
-      margin-bottom: 6px;
-      font-size: 0.95em;
+      margin: 10px 0 4px;
+      font-size: 0.9em;
       color: #333;
-      font-weight: 500;
     }
     input {
       width: 100%;
-      padding: 12px;
-      font-size: 1em;
+      padding: 10px;
+      font-size: 0.95em;
       background: #fafafa;
       border: 1px solid #ccc;
-      border-radius: 8px;
+      border-radius: 6px;
       color: #000;
       box-sizing: border-box;
     }
     input::placeholder { color: #999; }
     .btn-row {
       display: flex;
-      gap: 10px;
-      margin: 20px 0 10px;
+      gap: 8px;
+      margin: 16px 0;
     }
     button {
       flex: 1;
-      padding: 14px;
-      font-size: 1.05em;
+      padding: 12px;
+      font-size: 1em;
       font-weight: 600;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: 0.2s;
     }
     .start { background: #ffeb3b; color: #000; }
     .stop  { background: #d32f2f; color: white; }
@@ -77,32 +92,36 @@
     #status {
       text-align: center;
       font-weight: bold;
-      font-size: 1.1em;
       margin: 12px 0;
+      font-size: 1.1em;
       color: #333;
     }
-    #ordersList {
+    .orders-section {
       background: #fff;
       border: 1px solid #ddd;
       border-radius: 12px;
-      padding: 16px;
-      min-height: 200px;
+      padding: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .orders-title {
+      font-size: 1.1em;
+      color: #000;
+      margin: 0 0 8px;
+      font-weight: bold;
     }
     .order-item {
       border-bottom: 1px solid #eee;
-      padding: 12px 0;
-      font-size: 0.95em;
+      padding: 10px 0;
+      font-size: 0.9em;
     }
     .order-item:last-child { border-bottom: none; }
     .order-symbol { font-weight: bold; color: #000; }
-    .order-side-buy { color: #00c087; font-weight: bold; }
-    .order-side-sell { color: #f6465d; font-weight: bold; }
+    .buy { color: #00c087; font-weight: bold; }
+    .sell { color: #f6465d; font-weight: bold; }
     .no-orders {
       text-align: center;
       color: #777;
-      padding: 30px 0;
-      font-size: 1em;
+      padding: 20px 0;
     }
   </style>
 </head>
@@ -111,18 +130,21 @@
 <header>Binance Ордери Монітор</header>
 
 <div class="container">
-  <div class="card">
-    <label>Binance API Key</label>
-    <input type="text" id="apiKey" placeholder="Встав API Key" autocomplete="off"/>
+  <div class="settings-card">
+    <div class="settings-header" id="settingsToggle">Налаштування ключів ▼</div>
+    <div class="settings-body" id="settingsBody">
+      <label>Binance API Key</label>
+      <input type="text" id="apiKey" placeholder="Встав API Key" autocomplete="off"/>
 
-    <label>Binance Secret Key</label>
-    <input type="password" id="secret" placeholder="Встав Secret Key" autocomplete="off"/>
+      <label>Binance Secret Key</label>
+      <input type="password" id="secret" placeholder="Встав Secret Key" autocomplete="off"/>
 
-    <label>Telegram Bot Token (опціонально)</label>
-    <input type="text" id="botToken" placeholder="123456789:ABCdef..." autocomplete="off"/>
+      <label>Telegram Bot Token (опціонально)</label>
+      <input type="text" id="botToken" placeholder="123456789:ABCdef..." autocomplete="off"/>
 
-    <label>Telegram Chat ID (опціонально)</label>
-    <input type="text" id="chatId" placeholder="123456789" autocomplete="off"/>
+      <label>Telegram Chat ID (опціонально)</label>
+      <input type="text" id="chatId" placeholder="123456789" autocomplete="off"/>
+    </div>
   </div>
 
   <div class="btn-row">
@@ -133,11 +155,26 @@
 
   <div id="status">Статус: зупинено</div>
 
-  <div id="ordersList">
-    <div class="no-orders">Відкритих ордерів немає (натисни START)</div>
+  <div class="orders-section">
+    <div class="orders-title">Відкриті ордери</div>
+    <div id="ordersList">
+      <div class="no-orders">Натисни START для моніторингу</div>
+    </div>
   </div>
 
-  <div id="log" style="display:none;"></div> <!-- Лог прихований, щоб не засмічувати інтерфейс -->
+  <div class="orders-section">
+    <div class="orders-title">Ордери на покупку</div>
+    <div id="buyOrdersList">
+      <div class="no-orders">Немає ордерів на покупку</div>
+    </div>
+  </div>
+
+  <div class="orders-section">
+    <div class="orders-title">Ордери на продаж</div>
+    <div id="sellOrdersList">
+      <div class="no-orders">Немає ордерів на продаж</div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -168,6 +205,8 @@ async function hmacSHA256(key, data) {
 let intervalId = null;
 let previousOrderIds = new Set();
 const ordersList = document.getElementById('ordersList');
+const buyOrdersList = document.getElementById('buyOrdersList');
+const sellOrdersList = document.getElementById('sellOrdersList');
 const statusEl = document.getElementById('status');
 
 function setStatus(text, color = '#000') {
@@ -177,26 +216,47 @@ function setStatus(text, color = '#000') {
 
 function updateOrders(data) {
   ordersList.innerHTML = '';
+  buyOrdersList.innerHTML = '';
+  sellOrdersList.innerHTML = '';
 
   if (data.length === 0) {
     ordersList.innerHTML = '<div class="no-orders">Відкритих ордерів немає</div>';
+    buyOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на покупку</div>';
+    sellOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на продаж</div>';
     return;
   }
 
+  let buyCount = 0;
+  let sellCount = 0;
+
   data.forEach(o => {
-    const sideClass = o.side === 'BUY' ? 'order-side-buy' : 'order-side-sell';
+    const sideText = o.side === 'BUY' ? 'Покупка' : 'Продаж';
+    const sideClass = o.side === 'BUY' ? 'buy' : 'sell';
+
     const item = document.createElement('div');
     item.className = 'order-item';
     item.innerHTML = `
       <div class="order-symbol">${o.symbol}</div>
-      <div>Сторона: <span class="\( {sideClass}"> \){o.side}</span></div>
+      <div>Сторона: <span class="\( {sideClass}"> \){sideText}</span></div>
       <div>Кількість: ${o.origQty}</div>
       <div>Ціна/Тип: ${o.price !== "0.00000000" ? o.price : o.type}</div>
       <div>Статус: ${o.status}</div>
       <div>Час: ${new Date(o.time).toLocaleString('uk-UA')}</div>
     `;
-    ordersList.appendChild(item);
+
+    ordersList.appendChild(item.cloneNode(true));
+
+    if (o.side === 'BUY') {
+      buyOrdersList.appendChild(item);
+      buyCount++;
+    } else {
+      sellOrdersList.appendChild(item);
+      sellCount++;
+    }
   });
+
+  if (buyCount === 0) buyOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на покупку</div>';
+  if (sellCount === 0) sellOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на продаж</div>';
 }
 
 async function checkOrders() {
@@ -227,7 +287,6 @@ async function checkOrders() {
     }
 
     const data = await resp.json();
-
     updateOrders(data);
 
     const currentIds = new Set(data.map(o => o.orderId));
@@ -236,12 +295,10 @@ async function checkOrders() {
     previousOrderIds = currentIds;
 
     if (newIds.length > 0) {
-      setStatus("нові ордери!", "#ff9800");
-      // Тут можна додати звук або вібрацію, якщо потрібно
+      setStatus("нові ордери", "#ffb300");
     } else {
       setStatus("працює", "#00c087");
     }
-
   } catch (err) {
     setStatus("мережева помилка", "#d32f2f");
   }
@@ -252,7 +309,7 @@ document.getElementById('startBtn').onclick = async () => {
   previousOrderIds.clear();
   await checkOrders();
   if (intervalId) clearInterval(intervalId);
-  intervalId = setInterval(checkOrders, 3000); // 3 секунди
+  intervalId = setInterval(checkOrders, 3000);
 };
 
 document.getElementById('stopBtn').onclick = () => {
@@ -263,12 +320,21 @@ document.getElementById('stopBtn').onclick = () => {
 document.getElementById('restartBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
   previousOrderIds.clear();
-  setStatus("перезапуск...", "#ff9800");
+  setStatus("перезапуск...", "#ffb300");
   checkOrders();
   intervalId = setInterval(checkOrders, 3000);
 };
 
-// Автозапуск при збереженні ключів
+// Акордеон для налаштувань
+document.getElementById('settingsToggle').onclick = () => {
+  const body = document.getElementById('settingsBody');
+  body.classList.toggle('active');
+  document.getElementById('settingsToggle').textContent = body.classList.contains('active') 
+    ? "Налаштування ключів ▲" 
+    : "Налаштування ключів ▼";
+};
+
+// Автозапуск
 if (localStorage.getItem('apiKey') && localStorage.getItem('secret')) {
   document.getElementById('apiKey').value = localStorage.getItem('apiKey');
   document.getElementById('secret').value = localStorage.getItem('secret');
