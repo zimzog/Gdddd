@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Binance Monitor</title>
+  <title>Binance Futures Monitor</title>
   <style>
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: #0b0e11;
-      color: #e0e0e0;
+      color: #d1d4dc;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -26,15 +26,37 @@
     .container {
       padding: 16px;
       flex: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
     }
-    .card {
+    .portfolio-card {
       background: #161a1e;
       border: 1px solid #1e2328;
       border-radius: 8px;
       padding: 16px;
+      margin-bottom: 16px;
+    }
+    .portfolio-title {
+      font-size: 1.1em;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+    .portfolio-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      font-size: 0.9em;
+    }
+    .stat-label {
+      color: #a0a0a0;
+    }
+    .stat-value {
+      color: #fff;
+      font-weight: bold;
+    }
+    .green { color: #00c087; }
+    .red { color: #f6465d; }
+    .yellow { color: #f0b90b; }
+    .inputs {
+      margin-bottom: 16px;
     }
     label {
       display: block;
@@ -56,7 +78,7 @@
     .btn-row {
       display: flex;
       gap: 8px;
-      margin-top: 12px;
+      margin: 16px 0;
     }
     button {
       flex: 1;
@@ -78,6 +100,52 @@
       margin: 12px 0;
       font-size: 1.1em;
     }
+    .positions-title {
+      font-size: 1.1em;
+      color: #fff;
+      margin: 16px 0 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .position-card {
+      background: #161a1e;
+      border: 1px solid #1e2328;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .position-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .symbol {
+      font-size: 1.1em;
+      font-weight: bold;
+      color: #fff;
+    }
+    .pnl {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+    .roi {
+      font-size: 0.9em;
+    }
+    .details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 0.9em;
+    }
+    .detail-label {
+      color: #a0a0a0;
+    }
+    .detail-value {
+      text-align: right;
+      color: #fff;
+    }
     #log {
       background: #0f1419;
       border: 1px solid #1e2328;
@@ -89,6 +157,7 @@
       font-size: 0.9em;
       white-space: pre-wrap;
       color: #00c087;
+      margin-top: 16px;
     }
   </style>
 </head>
@@ -97,7 +166,21 @@
 <header>Binance Futures Monitor</header>
 
 <div class="container">
-  <div class="card">
+  <div class="card portfolio-card">
+    <div class="portfolio-title">Сведения о портфеле</div>
+    <div class="portfolio-stats">
+      <div>
+        <div class="stat-label">Реализованный PnL (USDT)</div>
+        <div id="realizedPnL" class="stat-value green">0.00</div>
+      </div>
+      <div>
+        <div class="stat-label">Нереализованный PnL (USDT)</div>
+        <div id="unrealizedPnL" class="stat-value red">0.00</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="inputs">
     <label>Binance API Key</label>
     <input type="text" id="apiKey" placeholder="Встав API Key" autocomplete="off"/>
 
@@ -119,11 +202,19 @@
 
   <div id="status">Status: stopped</div>
 
-  <div id="log">Waiting... Press START to begin monitoring</div>
+  <div class="positions-title">
+    Позиции (<span id="positionsCount">0</span>)
+  </div>
+
+  <div id="positionsList">
+    <!-- Позиції будуть додаватися тут динамічно -->
+  </div>
+
+  <div id="log">Waiting... Press START</div>
 </div>
 
 <script>
-// Правильна HMAC-SHA256
+// HMAC-SHA256
 async function hmacSHA256(key, data) {
   try {
     const encoder = new TextEncoder();
@@ -151,6 +242,8 @@ let intervalId = null;
 let previousOrderIds = new Set();
 const logEl = document.getElementById('log');
 const statusEl = document.getElementById('status');
+const positionsList = document.getElementById('positionsList');
+const positionsCount = document.getElementById('positionsCount');
 
 function log(msg) {
   const time = new Date().toLocaleTimeString();
@@ -158,23 +251,42 @@ function log(msg) {
   logEl.scrollTop = logEl.scrollHeight;
 }
 
-function setStatus(text, color = '#00c087') {
+function setStatus(text) {
   statusEl.textContent = `Status: ${text}`;
-  statusEl.style.color = color;
 }
 
-async function sendTelegram(botToken, chatId, text) {
-  if (!botToken || !chatId) return;
-  try {
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: text })
-    });
-    log("Telegram sent");
-  } catch (err) {
-    log("Telegram error: " + err.message);
+function updatePositions(data) {
+  positionsList.innerHTML = '';
+  if (data.length === 0) {
+    positionsList.innerHTML = '<div style="text-align:center; color:#a0a0a0; padding:20px;">Нет открытых позиций</div>';
+    positionsCount.textContent = '0';
+    return;
   }
+
+  positionsCount.textContent = data.length;
+
+  data.forEach(o => {
+    const pnl = parseFloat(o.unrealizedProfit || 0);
+    const pnlClass = pnl > 0 ? 'green' : pnl < 0 ? 'red' : '';
+    const roi = ((pnl / parseFloat(o.initialMargin || 1)) * 100).toFixed(2);
+
+    const card = document.createElement('div');
+    card.className = 'position-card';
+    card.innerHTML = `
+      <div class="position-header">
+        <div class="symbol">${o.symbol}</div>
+        <div class="pnl \( {pnlClass}"> \){pnl.toFixed(2)}</div>
+      </div>
+      <div class="roi \( {pnlClass}"> \){roi}%</div>
+      <div class="details">
+        <div><span class="detail-label">Размер:</span> <span class="detail-value">${o.positionAmt}</span></div>
+        <div><span class="detail-label">Маржа:</span> <span class="detail-value">${o.initialMargin || 'N/A'}</span></div>
+        <div><span class="detail-label">Цена входа:</span> <span class="detail-value">${o.entryPrice || 'N/A'}</span></div>
+        <div><span class="detail-label">Цена маркировки:</span> <span class="detail-value">${o.markPrice || 'N/A'}</span></div>
+      </div>
+    `;
+    positionsList.appendChild(card);
+  });
 }
 
 async function checkOrders() {
@@ -208,27 +320,28 @@ async function checkOrders() {
 
     const data = await resp.json();
 
-    if (Array.isArray(data)) {
-      const currentIds = new Set(data.map(o => o.orderId));
-      const newIds = [...currentIds].filter(id => !previousOrderIds.has(id));
+    updatePositions(data);
 
-      previousOrderIds = currentIds;
+    const currentIds = new Set(data.map(o => o.orderId));
+    const newIds = [...currentIds].filter(id => !previousOrderIds.has(id));
 
-      if (data.length === 0) {
-        log("No open orders");
-      } else if (newIds.length > 0) {
-        log("New orders (" + newIds.length + ")");
-        data.filter(o => newIds.includes(o.orderId)).forEach(o => {
-          const price = o.price !== "0.00000000" ? o.price : o.type;
-          const msg = "NEW ORDER\nSymbol: " + o.symbol + "\nSide: " + o.side + "\nQty: " + o.origQty + "\nPrice: " + price + "\nStatus: " + o.status;
-          log(msg);
-          sendTelegram(botToken, chatId, msg);
-        });
-      } else {
-        log("No changes (" + data.length + " open)");
-      }
+    previousOrderIds = currentIds;
+
+    if (newIds.length > 0) {
+      log("New orders (" + newIds.length + ")");
+      data.filter(o => newIds.includes(o.orderId)).forEach(o => {
+        const msg = `NEW ORDER\nSymbol: ${o.symbol}\nSide: ${o.side}\nQty: ${o.origQty}\nPrice: ${o.price || o.type}\nStatus: ${o.status}`;
+        log(msg);
+        if (botToken && chatId) {
+          fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: msg })
+          }).catch(err => log("Telegram error: " + err.message));
+        }
+      });
     } else {
-      log("Unexpected response");
+      log("No new orders");
     }
   } catch (err) {
     log("Error: " + err.message);
@@ -241,36 +354,24 @@ document.getElementById('startBtn').onclick = async () => {
   previousOrderIds.clear();
   await checkOrders();
   if (intervalId) clearInterval(intervalId);
-  intervalId = setInterval(checkOrders, 3000); // 3 секунди — мінімальний безпечний інтервал
+  intervalId = setInterval(checkOrders, 3000); // 3 секунди
 };
 
 document.getElementById('stopBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
   log("Stopped");
-  setStatus("stopped", "#f6465d");
+  setStatus("stopped");
 };
 
 document.getElementById('restartBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
   logEl.textContent = "";
   log("Restarted");
-  setStatus("restarting", "#f0b90b");
+  setStatus("restarting");
   previousOrderIds.clear();
   checkOrders();
   intervalId = setInterval(checkOrders, 3000);
 };
-
-// Автозапуск при збереженні ключів
-if (localStorage.getItem('apiKey') && localStorage.getItem('secret')) {
-  document.getElementById('apiKey').value = localStorage.getItem('apiKey');
-  document.getElementById('secret').value = localStorage.getItem('secret');
-  document.getElementById('botToken').value = localStorage.getItem('botToken') || '';
-  document.getElementById('chatId').value = localStorage.getItem('chatId') || '';
-  log("Autostart with saved keys...");
-  setStatus("running");
-  checkOrders();
-  intervalId = setInterval(checkOrders, 3000);
-}
 </script>
 </body>
 </html>
