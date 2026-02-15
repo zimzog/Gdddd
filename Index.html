@@ -5,47 +5,125 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Binance Monitor</title>
   <style>
-    body { font-family: system-ui, sans-serif; background:#111; color:#0f0; margin:0; padding:15px; }
-    h1 { color:#0f8; text-align:center; margin:1em 0 0.6em; }
-    input, button { display:block; width:100%; margin:10px 0; padding:12px; font-size:16px; box-sizing:border-box; border-radius:6px; }
-    button { color:white; border:none; font-weight:bold; cursor:pointer; }
-    button.green  { background:#0a0; }
-    button.red    { background:#a00; }
-    button.gray   { background:#444; }
-    #log { background:#000; color:#0f0; padding:10px; height:45vh; overflow-y:auto; white-space:pre-wrap; font-family:monospace; font-size:13px; border:1px solid #333; border-radius:6px; margin-top:15px; }
-    label { display:block; margin:12px 0 4px; font-size:14px; color:#ccc; }
-    .btn-row { display:flex; gap:10px; margin:15px 0; }
-    .btn-row button { flex:1; padding:14px; font-size:16px; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0b0e11;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: #0b0e11;
+      padding: 12px 16px;
+      border-bottom: 1px solid #1e2328;
+      text-align: center;
+      font-size: 1.3em;
+      font-weight: 600;
+      color: #00c087;
+    }
+    .container {
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .card {
+      background: #161a1e;
+      border: 1px solid #1e2328;
+      border-radius: 8px;
+      padding: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9em;
+      color: #a0a0a0;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      font-size: 1em;
+      background: #0f1419;
+      border: 1px solid #2a2f36;
+      border-radius: 6px;
+      color: #e0e0e0;
+      box-sizing: border-box;
+    }
+    input::placeholder { color: #5c6770; }
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    button {
+      flex: 1;
+      padding: 14px;
+      font-size: 1em;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .start { background: #00c087; color: #000; }
+    .stop  { background: #f6465d; color: white; }
+    .restart { background: #f0b90b; color: #000; }
+    button:active { opacity: 0.8; }
+    #status {
+      text-align: center;
+      font-weight: bold;
+      margin: 12px 0;
+      font-size: 1.1em;
+    }
+    #log {
+      background: #0f1419;
+      border: 1px solid #1e2328;
+      border-radius: 8px;
+      padding: 12px;
+      flex: 1;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.9em;
+      white-space: pre-wrap;
+      color: #00c087;
+    }
   </style>
 </head>
 <body>
 
-<h1>Monitor Open Orders</h1>
+<header>Binance Futures Monitor</header>
 
-<label>Binance API Key:</label>
-<input type="text" id="apiKey" placeholder="Paste API Key" autocomplete="off"/>
+<div class="container">
+  <div class="card">
+    <label>Binance API Key</label>
+    <input type="text" id="apiKey" placeholder="Встав API Key" autocomplete="off"/>
 
-<label>Binance Secret Key:</label>
-<input type="password" id="secret" placeholder="Paste Secret Key" autocomplete="off"/>
+    <label>Binance Secret Key</label>
+    <input type="password" id="secret" placeholder="Встав Secret Key" autocomplete="off"/>
 
-<label>Telegram Bot Token (optional):</label>
-<input type="text" id="botToken" placeholder="123456789:ABCdef..." autocomplete="off"/>
+    <label>Telegram Bot Token (опціонально)</label>
+    <input type="text" id="botToken" placeholder="123456789:ABCdef..." autocomplete="off"/>
 
-<label>Telegram Chat ID (optional):</label>
-<input type="text" id="chatId" placeholder="123456789" autocomplete="off"/>
+    <label>Telegram Chat ID (опціонально)</label>
+    <input type="text" id="chatId" placeholder="123456789" autocomplete="off"/>
+  </div>
 
-<div class="btn-row">
-  <button id="startBtn" class="green">START</button>
-  <button id="stopBtn" class="red">STOP</button>
-  <button id="restartBtn" class="gray">RESTART</button>
+  <div class="btn-row">
+    <button id="startBtn" class="start">START</button>
+    <button id="stopBtn" class="stop">STOP</button>
+    <button id="restartBtn" class="restart">RESTART</button>
+  </div>
+
+  <div id="status">Status: stopped</div>
+
+  <div id="log">Waiting... Press START to begin monitoring</div>
 </div>
 
-<div id="status" style="text-align:center; color:#0f8; margin:10px 0; font-weight:bold;">Status: stopped</div>
-
-<div id="log">Waiting... Press START</div>
-
 <script>
-// Correct HMAC-SHA256
+// Правильна HMAC-SHA256
 async function hmacSHA256(key, data) {
   try {
     const encoder = new TextEncoder();
@@ -65,7 +143,7 @@ async function hmacSHA256(key, data) {
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   } catch (e) {
     console.error("HMAC error:", e);
-    return 'error-signature';
+    return 'error';
   }
 }
 
@@ -80,8 +158,9 @@ function log(msg) {
   logEl.scrollTop = logEl.scrollHeight;
 }
 
-function setStatus(text) {
+function setStatus(text, color = '#00c087') {
   statusEl.textContent = `Status: ${text}`;
+  statusEl.style.color = color;
 }
 
 async function sendTelegram(botToken, chatId, text) {
@@ -116,15 +195,10 @@ async function checkOrders() {
 
     const url = "https://fapi.binance.com/fapi/v1/openOrders?" + query + "&signature=" + signature;
 
-    log("Timestamp: " + ts);
-    log("Signature start: " + signature.substring(0, 16) + "...");
-
     const resp = await fetch(url, {
       method: 'GET',
       headers: { 'X-MBX-APIKEY': apiKey }
     });
-
-    log("Status: " + resp.status);
 
     if (!resp.ok) {
       const err = await resp.text();
@@ -167,24 +241,36 @@ document.getElementById('startBtn').onclick = async () => {
   previousOrderIds.clear();
   await checkOrders();
   if (intervalId) clearInterval(intervalId);
-  intervalId = setInterval(checkOrders, 10000);
+  intervalId = setInterval(checkOrders, 3000); // 3 секунди — мінімальний безпечний інтервал
 };
 
 document.getElementById('stopBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
   log("Stopped");
-  setStatus("stopped");
+  setStatus("stopped", "#f6465d");
 };
 
 document.getElementById('restartBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
   logEl.textContent = "";
   log("Restarted");
-  setStatus("restarting");
+  setStatus("restarting", "#f0b90b");
   previousOrderIds.clear();
   checkOrders();
-  intervalId = setInterval(checkOrders, 10000);
+  intervalId = setInterval(checkOrders, 3000);
 };
+
+// Автозапуск при збереженні ключів
+if (localStorage.getItem('apiKey') && localStorage.getItem('secret')) {
+  document.getElementById('apiKey').value = localStorage.getItem('apiKey');
+  document.getElementById('secret').value = localStorage.getItem('secret');
+  document.getElementById('botToken').value = localStorage.getItem('botToken') || '';
+  document.getElementById('chatId').value = localStorage.getItem('chatId') || '';
+  log("Autostart with saved keys...");
+  setStatus("running");
+  checkOrders();
+  intervalId = setInterval(checkOrders, 3000);
+}
 </script>
 </body>
 </html>
