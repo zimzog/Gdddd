@@ -3,75 +3,49 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Binance Монітор + Telegram</title>
+  <title>Binance Monitor</title>
   <style>
-    body { 
-      font-family: system-ui, sans-serif; 
-      background:#111; 
-      color:#0f0; 
-      margin:0; 
-      padding:15px; 
-      min-height:100vh; 
-      display:flex; 
-      flex-direction:column; 
-    }
-    h1 { color:#0f8; text-align:center; margin:0.8em 0 0.4em; font-size:1.4em; }
-    .container { max-width:600px; margin:0 auto; flex:1; display:flex; flex-direction:column; }
-    .inputs { margin-bottom:15px; }
-    label { display:block; margin:10px 0 4px; font-size:14px; color:#ccc; }
-    input { width:100%; padding:12px; font-size:16px; box-sizing:border-box; border-radius:6px; background:#222; color:#0f0; border:1px solid #333; }
-    .buttons { display:flex; gap:10px; margin:15px 0; }
-    button { flex:1; padding:14px; font-size:16px; border:none; border-radius:6px; color:white; font-weight:bold; cursor:pointer; }
-    .start { background:#0a0; }
-    .stop { background:#a00; }
-    .restart { background:#444; }
-    #log { 
-      background:#000; 
-      color:#0f0; 
-      padding:10px; 
-      flex:1; 
-      overflow-y:auto; 
-      white-space:pre-wrap; 
-      font-family:monospace; 
-      font-size:13px; 
-      border:1px solid #333; 
-      border-radius:6px; 
-    }
-    .status { text-align:center; color:#0f8; margin-top:10px; font-weight:bold; }
+    body { font-family: system-ui, sans-serif; background:#111; color:#0f0; margin:0; padding:15px; }
+    h1 { color:#0f8; text-align:center; margin:1em 0 0.6em; }
+    input, button { display:block; width:100%; margin:10px 0; padding:12px; font-size:16px; box-sizing:border-box; border-radius:6px; }
+    button { color:white; border:none; font-weight:bold; cursor:pointer; }
+    button.green  { background:#0a0; }
+    button.red    { background:#a00; }
+    button.gray   { background:#444; }
+    #log { background:#000; color:#0f0; padding:10px; height:45vh; overflow-y:auto; white-space:pre-wrap; font-family:monospace; font-size:13px; border:1px solid #333; border-radius:6px; margin-top:15px; }
+    label { display:block; margin:12px 0 4px; font-size:14px; color:#ccc; }
+    .btn-row { display:flex; gap:10px; margin:15px 0; }
+    .btn-row button { flex:1; padding:14px; font-size:16px; }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>Binance Монітор + Telegram</h1>
+<h1>Monitor Open Orders</h1>
 
-  <div class="inputs">
-    <label>Binance API Key:</label>
-    <input type="text" id="apiKey" placeholder="Встав API Key" autocomplete="off"/>
+<label>Binance API Key:</label>
+<input type="text" id="apiKey" placeholder="Paste API Key" autocomplete="off"/>
 
-    <label>Binance Secret Key:</label>
-    <input type="password" id="secret" placeholder="Встав Secret Key" autocomplete="off"/>
+<label>Binance Secret Key:</label>
+<input type="password" id="secret" placeholder="Paste Secret Key" autocomplete="off"/>
 
-    <label>Telegram Bot Token (опціонально):</label>
-    <input type="text" id="botToken" placeholder="123456789:ABCdef..." autocomplete="off"/>
+<label>Telegram Bot Token (optional):</label>
+<input type="text" id="botToken" placeholder="123456789:ABCdef..." autocomplete="off"/>
 
-    <label>Telegram Chat ID (опціонально):</label>
-    <input type="text" id="chatId" placeholder="123456789" autocomplete="off"/>
-  </div>
+<label>Telegram Chat ID (optional):</label>
+<input type="text" id="chatId" placeholder="123456789" autocomplete="off"/>
 
-  <div class="buttons">
-    <button id="startBtn" class="start">START</button>
-    <button id="stopBtn" class="stop">STOP</button>
-    <button id="restartBtn" class="restart">RESTART</button>
-  </div>
-
-  <div id="status" class="status">Статус: зупинено</div>
-
-  <div id="log">Очікую команди... Натисни START</div>
+<div class="btn-row">
+  <button id="startBtn" class="green">START</button>
+  <button id="stopBtn" class="red">STOP</button>
+  <button id="restartBtn" class="gray">RESTART</button>
 </div>
 
+<div id="status" style="text-align:center; color:#0f8; margin:10px 0; font-weight:bold;">Status: stopped</div>
+
+<div id="log">Waiting... Press START</div>
+
 <script>
-// Правильна HMAC-SHA256 через Web Crypto API
+// Correct HMAC-SHA256
 async function hmacSHA256(key, data) {
   try {
     const encoder = new TextEncoder();
@@ -101,28 +75,26 @@ const logEl = document.getElementById('log');
 const statusEl = document.getElementById('status');
 
 function log(msg) {
-  const time = new Date().toLocaleTimeString('uk-UA', {hour12:false});
+  const time = new Date().toLocaleTimeString();
   logEl.textContent += `[${time}] ${msg}\n`;
   logEl.scrollTop = logEl.scrollHeight;
 }
 
-function updateStatus(text, color = '#0f8') {
-  statusEl.textContent = `Статус: ${text}`;
-  statusEl.style.color = color;
+function setStatus(text) {
+  statusEl.textContent = `Status: ${text}`;
 }
 
-async function sendTelegramMessage(botToken, chatId, text) {
+async function sendTelegram(botToken, chatId, text) {
   if (!botToken || !chatId) return;
   try {
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' })
+      body: JSON.stringify({ chat_id: chatId, text: text })
     });
-    if (response.ok) log("Відправлено в Telegram");
-    else log("Помилка Telegram: " + response.status);
+    log("Telegram sent");
   } catch (err) {
-    log("Помилка відправки в Telegram: " + err.message);
+    log("Telegram error: " + err.message);
   }
 }
 
@@ -133,25 +105,30 @@ async function checkOrders() {
   const chatId = document.getElementById('chatId').value.trim();
 
   if (!apiKey || !secret) {
-    log("Помилка: введи ключі Binance");
+    log("Enter Binance keys");
     return;
   }
 
   try {
     const ts = Date.now();
-    const query = `timestamp=${ts}`;
+    const query = "timestamp=" + ts;
     const signature = await hmacSHA256(secret, query);
 
-    const url = `https://fapi.binance.com/fapi/v1/openOrders?\( {encodeURIComponent(query)}&signature= \){encodeURIComponent(signature)}`;
+    const url = "https://fapi.binance.com/fapi/v1/openOrders?" + query + "&signature=" + signature;
+
+    log("Timestamp: " + ts);
+    log("Signature start: " + signature.substring(0, 16) + "...");
 
     const resp = await fetch(url, {
       method: 'GET',
       headers: { 'X-MBX-APIKEY': apiKey }
     });
 
+    log("Status: " + resp.status);
+
     if (!resp.ok) {
-      const errText = await resp.text();
-      log("Binance помилка: " + errText);
+      const err = await resp.text();
+      log("Binance error: " + err);
       return;
     }
 
@@ -164,30 +141,30 @@ async function checkOrders() {
       previousOrderIds = currentIds;
 
       if (data.length === 0) {
-        log("Відкритих ордерів немає");
+        log("No open orders");
       } else if (newIds.length > 0) {
-        log(`Нові ордери (${newIds.length})`);
+        log("New orders (" + newIds.length + ")");
         data.filter(o => newIds.includes(o.orderId)).forEach(o => {
           const price = o.price !== "0.00000000" ? o.price : o.type;
-          const msg = `🔔 НОВИЙ ОРДЕР\nСимвол: ${o.symbol}\nСторона: ${o.side}\nКількість: ${o.origQty}\nЦіна/Тип: ${price}\nСтатус: ${o.status}`;
+          const msg = "NEW ORDER\nSymbol: " + o.symbol + "\nSide: " + o.side + "\nQty: " + o.origQty + "\nPrice: " + price + "\nStatus: " + o.status;
           log(msg);
-          sendTelegramMessage(botToken, chatId, msg);
+          sendTelegram(botToken, chatId, msg);
         });
       } else {
-        log(`Ордери без змін (${data.length})`);
+        log("No changes (" + data.length + " open)");
       }
     } else {
-      log("Відповідь не масив: " + JSON.stringify(data));
+      log("Unexpected response");
     }
   } catch (err) {
-    log("Критична помилка: " + err.message);
+    log("Error: " + err.message);
   }
 }
 
 document.getElementById('startBtn').onclick = async () => {
+  log("Started");
+  setStatus("running");
   previousOrderIds.clear();
-  log("Моніторинг запущено");
-  updateStatus("працює", "#0f8");
   await checkOrders();
   if (intervalId) clearInterval(intervalId);
   intervalId = setInterval(checkOrders, 10000);
@@ -195,31 +172,19 @@ document.getElementById('startBtn').onclick = async () => {
 
 document.getElementById('stopBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
-  log("Моніторинг зупинено");
-  updateStatus("зупинено", "#f88");
+  log("Stopped");
+  setStatus("stopped");
 };
 
 document.getElementById('restartBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
-  previousOrderIds.clear();
   logEl.textContent = "";
-  log("Перезапуск... Очищено лог");
-  updateStatus("перезапуск", "#ff8");
+  log("Restarted");
+  setStatus("restarting");
+  previousOrderIds.clear();
   checkOrders();
   intervalId = setInterval(checkOrders, 10000);
 };
-
-// Автозапуск, якщо ключі збережені
-if (localStorage.getItem('apiKey') && localStorage.getItem('secret')) {
-  document.getElementById('apiKey').value = localStorage.getItem('apiKey');
-  document.getElementById('secret').value = localStorage.getItem('secret');
-  document.getElementById('botToken').value = localStorage.getItem('botToken') || '';
-  document.getElementById('chatId').value = localStorage.getItem('chatId') || '';
-  log("Збережені ключі знайдено — автозапуск...");
-  updateStatus("працює", "#0f8");
-  checkOrders();
-  intervalId = setInterval(checkOrders, 10000);
-}
 </script>
 </body>
 </html>
