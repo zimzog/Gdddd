@@ -3,60 +3,71 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Binance Моніторинг Ордерів + Telegram</title>
+  <title>Binance Монітор + Telegram</title>
   <style>
-    body { font-family: system-ui, sans-serif; background:#111; color:#0f0; margin:0; padding:15px; }
-    h1 { color:#0f8; text-align:center; margin:1em 0 0.6em; }
-    input, button { display:block; width:100%; margin:10px 0; padding:12px; font-size:16px; box-sizing:border-box; border-radius:6px; }
-    button { color:white; border:none; font-weight:bold; cursor:pointer; }
-    button.green  { background:#0a0; }
-    button.red    { background:#a00; }
-    button.gray   { background:#444; }
-    button:disabled { background:#333; cursor:not-allowed; opacity:0.6; }
-    #log { background:#000; color:#0f0; padding:10px; height:45vh; overflow-y:auto; white-space:pre-wrap; font-family:monospace; font-size:13px; border:1px solid #333; border-radius:6px; margin-top:15px; }
-    .hidden { display:none !important; }
-    label { display:block; margin:12px 0 4px; font-size:14px; color:#ccc; }
-    .btn-row { display:flex; gap:10px; margin:15px 0; }
-    .btn-row button { flex:1; padding:14px; font-size:16px; }
+    body { 
+      font-family: system-ui, sans-serif; 
+      background:#111; 
+      color:#0f0; 
+      margin:0; 
+      padding:15px; 
+      min-height:100vh; 
+      display:flex; 
+      flex-direction:column; 
+    }
+    h1 { color:#0f8; text-align:center; margin:0.8em 0 0.4em; font-size:1.4em; }
+    .container { max-width:600px; margin:0 auto; flex:1; display:flex; flex-direction:column; }
+    .inputs { margin-bottom:15px; }
+    label { display:block; margin:10px 0 4px; font-size:14px; color:#ccc; }
+    input { width:100%; padding:12px; font-size:16px; box-sizing:border-box; border-radius:6px; background:#222; color:#0f0; border:1px solid #333; }
+    .buttons { display:flex; gap:10px; margin:15px 0; }
+    button { flex:1; padding:14px; font-size:16px; border:none; border-radius:6px; color:white; font-weight:bold; cursor:pointer; }
+    .start { background:#0a0; }
+    .stop { background:#a00; }
+    .restart { background:#444; }
+    #log { 
+      background:#000; 
+      color:#0f0; 
+      padding:10px; 
+      flex:1; 
+      overflow-y:auto; 
+      white-space:pre-wrap; 
+      font-family:monospace; 
+      font-size:13px; 
+      border:1px solid #333; 
+      border-radius:6px; 
+    }
+    .status { text-align:center; color:#0f8; margin-top:10px; font-weight:bold; }
   </style>
 </head>
 <body>
 
-<div id="setup">
-  <h1>Моніторинг відкритих ордерів (Futures)</h1>
+<div class="container">
+  <h1>Binance Монітор + Telegram</h1>
 
-  <label>API Key (Binance):</label>
-  <input type="text" id="apiKey" placeholder="Встав API Key" autocomplete="off"/>
+  <div class="inputs">
+    <label>Binance API Key:</label>
+    <input type="text" id="apiKey" placeholder="Встав API Key" autocomplete="off"/>
 
-  <label>Secret Key (Binance):</label>
-  <input type="password" id="secret" placeholder="Встав Secret Key" autocomplete="off"/>
+    <label>Binance Secret Key:</label>
+    <input type="password" id="secret" placeholder="Встав Secret Key" autocomplete="off"/>
 
-  <label>Telegram Bot Token (опціонально):</label>
-  <input type="text" id="botToken" placeholder="123456789:ABCdef..." autocomplete="off"/>
+    <label>Telegram Bot Token (опціонально):</label>
+    <input type="text" id="botToken" placeholder="123456789:ABCdef..." autocomplete="off"/>
 
-  <label>Telegram Chat ID (опціонально):</label>
-  <input type="text" id="chatId" placeholder="123456789" autocomplete="off"/>
-
-  <button id="startBtn" class="green">Запустити моніторинг</button>
-
-  <p style="color:#888; font-size:0.85em; text-align:center; margin-top:20px;">
-    Ключі зберігаються тільки в браузері.<br>
-    <strong>Рекомендую read-only ключі!</strong><br>
-    Для Telegram: створи бота в @BotFather, отримай Chat ID через getUpdates.
-  </p>
-</div>
-
-<div id="monitor" class="hidden">
-  <h1>Моніторинг активний</h1>
-
-  <div class="btn-row">
-    <button id="stopBtn" class="red">Зупинити</button>
-    <button id="backBtn" class="gray">Повернутися</button>
+    <label>Telegram Chat ID (опціонально):</label>
+    <input type="text" id="chatId" placeholder="123456789" autocomplete="off"/>
   </div>
 
-  <button id="clearBtn" class="gray">Очистити лог</button>
+  <div class="buttons">
+    <button id="startBtn" class="start">START</button>
+    <button id="stopBtn" class="stop">STOP</button>
+    <button id="restartBtn" class="restart">RESTART</button>
+  </div>
 
-  <div id="log">Очікую оновлення... (кожні 10 секунд)</div>
+  <div id="status" class="status">Статус: зупинено</div>
+
+  <div id="log">Очікую команди... Натисни START</div>
 </div>
 
 <script>
@@ -79,21 +90,25 @@ async function hmacSHA256(key, data) {
     const hashArray = Array.from(new Uint8Array(signature));
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   } catch (e) {
-    console.error("HMAC помилка:", e);
+    console.error("HMAC error:", e);
     return 'error-signature';
   }
 }
 
 let intervalId = null;
-let previousOrderIds = new Set(); // Для виявлення нових ордерів
+let previousOrderIds = new Set();
 const logEl = document.getElementById('log');
-const setupDiv = document.getElementById('setup');
-const monitorDiv = document.getElementById('monitor');
+const statusEl = document.getElementById('status');
 
 function log(msg) {
   const time = new Date().toLocaleTimeString('uk-UA', {hour12:false});
   logEl.textContent += `[${time}] ${msg}\n`;
   logEl.scrollTop = logEl.scrollHeight;
+}
+
+function updateStatus(text, color = '#0f8') {
+  statusEl.textContent = `Статус: ${text}`;
+  statusEl.style.color = color;
 }
 
 async function sendTelegramMessage(botToken, chatId, text) {
@@ -104,76 +119,30 @@ async function sendTelegramMessage(botToken, chatId, text) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: 'HTML' })
     });
-    if (response.ok) {
-      log("Повідомлення в Telegram відправлено!");
-    } else {
-      log("Помилка Telegram: " + response.status);
-    }
+    if (response.ok) log("Відправлено в Telegram");
+    else log("Помилка Telegram: " + response.status);
   } catch (err) {
     log("Помилка відправки в Telegram: " + err.message);
   }
 }
 
-document.getElementById('startBtn').onclick = async () => {
+async function checkOrders() {
   const apiKey = document.getElementById('apiKey').value.trim();
   const secret = document.getElementById('secret').value.trim();
   const botToken = document.getElementById('botToken').value.trim();
   const chatId = document.getElementById('chatId').value.trim();
 
   if (!apiKey || !secret) {
-    alert("Введи ключі Binance!");
+    log("Помилка: введи ключі Binance");
     return;
   }
-
-  localStorage.setItem('apiKey', apiKey);
-  localStorage.setItem('secret', secret);
-  localStorage.setItem('botToken', botToken);
-  localStorage.setItem('chatId', chatId);
-
-  setupDiv.classList.add('hidden');
-  monitorDiv.classList.remove('hidden');
-
-  previousOrderIds.clear();
-  log("Запущено. Перше оновлення...");
-  await checkOrders();
-  intervalId = setInterval(checkOrders, 10000);
-};
-
-document.getElementById('stopBtn').onclick = () => {
-  if (intervalId) clearInterval(intervalId);
-  log("Моніторинг зупинено.");
-};
-
-document.getElementById('clearBtn').onclick = () => {
-  logEl.textContent = "";
-};
-
-document.getElementById('backBtn').onclick = () => {
-  if (intervalId) clearInterval(intervalId);
-  localStorage.clear();
-  setupDiv.classList.remove('hidden');
-  monitorDiv.classList.add('hidden');
-  logEl.textContent = "";
-  document.getElementById('apiKey').value = "";
-  document.getElementById('secret').value = "";
-  document.getElementById('botToken').value = "";
-  document.getElementById('chatId').value = "";
-};
-
-async function checkOrders() {
-  const apiKey = localStorage.getItem('apiKey');
-  const secret = localStorage.getItem('secret');
-  const botToken = localStorage.getItem('botToken');
-  const chatId = localStorage.getItem('chatId');
-
-  if (!apiKey || !secret) return;
 
   try {
     const ts = Date.now();
     const query = `timestamp=${ts}`;
     const signature = await hmacSHA256(secret, query);
 
-    const url = `https://fapi.binance.com/fapi/v1/openOrders?\( {query}&signature= \){signature}`;
+    const url = `https://fapi.binance.com/fapi/v1/openOrders?\( {encodeURIComponent(query)}&signature= \){encodeURIComponent(signature)}`;
 
     const resp = await fetch(url, {
       method: 'GET',
@@ -182,44 +151,72 @@ async function checkOrders() {
 
     if (!resp.ok) {
       const errText = await resp.text();
-      log(`ПОМИЛКА Binance: HTTP ${resp.status} — ${errText}`);
+      log("Binance помилка: " + errText);
       return;
     }
 
     const data = await resp.json();
 
     if (Array.isArray(data)) {
-      const currentOrderIds = new Set(data.map(o => o.orderId));
-      const newOrderIds = [...currentOrderIds].filter(id => !previousOrderIds.has(id));
+      const currentIds = new Set(data.map(o => o.orderId));
+      const newIds = [...currentIds].filter(id => !previousOrderIds.has(id));
 
-      previousOrderIds = currentOrderIds;
+      previousOrderIds = currentIds;
 
       if (data.length === 0) {
         log("Відкритих ордерів немає");
-      } else if (newOrderIds.length > 0) {
-        log(`Нові ордери виявлено (${newOrderIds.length})`);
-        data.filter(o => newOrderIds.includes(o.orderId)).forEach(o => {
+      } else if (newIds.length > 0) {
+        log(`Нові ордери (${newIds.length})`);
+        data.filter(o => newIds.includes(o.orderId)).forEach(o => {
           const price = o.price !== "0.00000000" ? o.price : o.type;
-          const msg = `🔔 Новий ордер!\nСимвол: ${o.symbol}\nСторона: ${o.side}\nКількість: ${o.origQty}\nЦіна/Тип: ${price}\nСтатус: ${o.status}\nЧас: ${new Date(o.time).toLocaleString('uk-UA')}`;
+          const msg = `🔔 НОВИЙ ОРДЕР\nСимвол: ${o.symbol}\nСторона: ${o.side}\nКількість: ${o.origQty}\nЦіна/Тип: ${price}\nСтатус: ${o.status}`;
           log(msg);
           sendTelegramMessage(botToken, chatId, msg);
         });
       } else {
-        log(`Ордери без змін (${data.length} відкритих)`);
+        log(`Ордери без змін (${data.length})`);
       }
     } else {
-      log("Неочікувана відповідь: " + JSON.stringify(data));
+      log("Відповідь не масив: " + JSON.stringify(data));
     }
   } catch (err) {
     log("Критична помилка: " + err.message);
   }
 }
 
+document.getElementById('startBtn').onclick = async () => {
+  previousOrderIds.clear();
+  log("Моніторинг запущено");
+  updateStatus("працює", "#0f8");
+  await checkOrders();
+  if (intervalId) clearInterval(intervalId);
+  intervalId = setInterval(checkOrders, 10000);
+};
+
+document.getElementById('stopBtn').onclick = () => {
+  if (intervalId) clearInterval(intervalId);
+  log("Моніторинг зупинено");
+  updateStatus("зупинено", "#f88");
+};
+
+document.getElementById('restartBtn').onclick = () => {
+  if (intervalId) clearInterval(intervalId);
+  previousOrderIds.clear();
+  logEl.textContent = "";
+  log("Перезапуск... Очищено лог");
+  updateStatus("перезапуск", "#ff8");
+  checkOrders();
+  intervalId = setInterval(checkOrders, 10000);
+};
+
 // Автозапуск, якщо ключі збережені
 if (localStorage.getItem('apiKey') && localStorage.getItem('secret')) {
-  setupDiv.classList.add('hidden');
-  monitorDiv.classList.remove('hidden');
-  log("Збережені ключі знайдено — запускаю...");
+  document.getElementById('apiKey').value = localStorage.getItem('apiKey');
+  document.getElementById('secret').value = localStorage.getItem('secret');
+  document.getElementById('botToken').value = localStorage.getItem('botToken') || '';
+  document.getElementById('chatId').value = localStorage.getItem('chatId') || '';
+  log("Збережені ключі знайдено — автозапуск...");
+  updateStatus("працює", "#0f8");
   checkOrders();
   intervalId = setInterval(checkOrders, 10000);
 }
