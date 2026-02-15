@@ -3,184 +3,115 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Binance Futures Monitor</title>
+  <title>Binance Ордери Монітор</title>
   <style>
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0b0e11;
-      color: #d1d4dc;
+      background: #f5f5f5;
+      color: #000;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
     header {
-      background: #0b0e11;
-      padding: 12px 16px;
-      border-bottom: 1px solid #1e2328;
+      background: #000;
+      color: #ffeb3b;
+      padding: 14px 16px;
       text-align: center;
-      font-size: 1.3em;
+      font-size: 1.4em;
       font-weight: 600;
-      color: #00c087;
+      border-bottom: 4px solid #ffeb3b;
     }
     .container {
       padding: 16px;
       flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
-    .portfolio-card {
-      background: #161a1e;
-      border: 1px solid #1e2328;
-      border-radius: 8px;
+    .card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
       padding: 16px;
-      margin-bottom: 16px;
-    }
-    .portfolio-title {
-      font-size: 1.1em;
-      color: #fff;
-      margin-bottom: 12px;
-    }
-    .portfolio-stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      font-size: 0.9em;
-    }
-    .stat-label {
-      color: #a0a0a0;
-    }
-    .stat-value {
-      color: #fff;
-      font-weight: bold;
-    }
-    .green { color: #00c087; }
-    .red { color: #f6465d; }
-    .yellow { color: #f0b90b; }
-    .inputs {
-      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
     label {
       display: block;
       margin-bottom: 6px;
-      font-size: 0.9em;
-      color: #a0a0a0;
+      font-size: 0.95em;
+      color: #333;
+      font-weight: 500;
     }
     input {
       width: 100%;
       padding: 12px;
       font-size: 1em;
-      background: #0f1419;
-      border: 1px solid #2a2f36;
-      border-radius: 6px;
-      color: #e0e0e0;
+      background: #fafafa;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      color: #000;
       box-sizing: border-box;
     }
-    input::placeholder { color: #5c6770; }
+    input::placeholder { color: #999; }
     .btn-row {
       display: flex;
-      gap: 8px;
-      margin: 16px 0;
+      gap: 10px;
+      margin: 20px 0 10px;
     }
     button {
       flex: 1;
       padding: 14px;
-      font-size: 1em;
+      font-size: 1.05em;
       font-weight: 600;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       cursor: pointer;
       transition: 0.2s;
     }
-    .start { background: #00c087; color: #000; }
-    .stop  { background: #f6465d; color: white; }
-    .restart { background: #f0b90b; color: #000; }
-    button:active { opacity: 0.8; }
+    .start { background: #ffeb3b; color: #000; }
+    .stop  { background: #d32f2f; color: white; }
+    .restart { background: #ffb300; color: #000; }
+    button:active { opacity: 0.85; }
     #status {
       text-align: center;
       font-weight: bold;
+      font-size: 1.1em;
       margin: 12px 0;
-      font-size: 1.1em;
+      color: #333;
     }
-    .positions-title {
-      font-size: 1.1em;
-      color: #fff;
-      margin: 16px 0 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .position-card {
-      background: #161a1e;
-      border: 1px solid #1e2328;
-      border-radius: 8px;
+    #ordersList {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
       padding: 16px;
-      margin-bottom: 12px;
+      min-height: 200px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .position-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
+    .order-item {
+      border-bottom: 1px solid #eee;
+      padding: 12px 0;
+      font-size: 0.95em;
     }
-    .symbol {
-      font-size: 1.1em;
-      font-weight: bold;
-      color: #fff;
-    }
-    .pnl {
-      font-size: 1.2em;
-      font-weight: bold;
-    }
-    .roi {
-      font-size: 0.9em;
-    }
-    .details {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      font-size: 0.9em;
-    }
-    .detail-label {
-      color: #a0a0a0;
-    }
-    .detail-value {
-      text-align: right;
-      color: #fff;
-    }
-    #log {
-      background: #0f1419;
-      border: 1px solid #1e2328;
-      border-radius: 8px;
-      padding: 12px;
-      flex: 1;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: 0.9em;
-      white-space: pre-wrap;
-      color: #00c087;
-      margin-top: 16px;
+    .order-item:last-child { border-bottom: none; }
+    .order-symbol { font-weight: bold; color: #000; }
+    .order-side-buy { color: #00c087; font-weight: bold; }
+    .order-side-sell { color: #f6465d; font-weight: bold; }
+    .no-orders {
+      text-align: center;
+      color: #777;
+      padding: 30px 0;
+      font-size: 1em;
     }
   </style>
 </head>
 <body>
 
-<header>Binance Futures Monitor</header>
+<header>Binance Ордери Монітор</header>
 
 <div class="container">
-  <div class="card portfolio-card">
-    <div class="portfolio-title">Сведения о портфеле</div>
-    <div class="portfolio-stats">
-      <div>
-        <div class="stat-label">Реализованный PnL (USDT)</div>
-        <div id="realizedPnL" class="stat-value green">0.00</div>
-      </div>
-      <div>
-        <div class="stat-label">Нереализованный PnL (USDT)</div>
-        <div id="unrealizedPnL" class="stat-value red">0.00</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="inputs">
+  <div class="card">
     <label>Binance API Key</label>
     <input type="text" id="apiKey" placeholder="Встав API Key" autocomplete="off"/>
 
@@ -200,17 +131,13 @@
     <button id="restartBtn" class="restart">RESTART</button>
   </div>
 
-  <div id="status">Status: stopped</div>
+  <div id="status">Статус: зупинено</div>
 
-  <div class="positions-title">
-    Позиции (<span id="positionsCount">0</span>)
+  <div id="ordersList">
+    <div class="no-orders">Відкритих ордерів немає (натисни START)</div>
   </div>
 
-  <div id="positionsList">
-    <!-- Позиції будуть додаватися тут динамічно -->
-  </div>
-
-  <div id="log">Waiting... Press START</div>
+  <div id="log" style="display:none;"></div> <!-- Лог прихований, щоб не засмічувати інтерфейс -->
 </div>
 
 <script>
@@ -240,63 +167,44 @@ async function hmacSHA256(key, data) {
 
 let intervalId = null;
 let previousOrderIds = new Set();
-const logEl = document.getElementById('log');
+const ordersList = document.getElementById('ordersList');
 const statusEl = document.getElementById('status');
-const positionsList = document.getElementById('positionsList');
-const positionsCount = document.getElementById('positionsCount');
 
-function log(msg) {
-  const time = new Date().toLocaleTimeString();
-  logEl.textContent += `[${time}] ${msg}\n`;
-  logEl.scrollTop = logEl.scrollHeight;
+function setStatus(text, color = '#000') {
+  statusEl.textContent = `Статус: ${text}`;
+  statusEl.style.color = color;
 }
 
-function setStatus(text) {
-  statusEl.textContent = `Status: ${text}`;
-}
+function updateOrders(data) {
+  ordersList.innerHTML = '';
 
-function updatePositions(data) {
-  positionsList.innerHTML = '';
   if (data.length === 0) {
-    positionsList.innerHTML = '<div style="text-align:center; color:#a0a0a0; padding:20px;">Нет открытых позиций</div>';
-    positionsCount.textContent = '0';
+    ordersList.innerHTML = '<div class="no-orders">Відкритих ордерів немає</div>';
     return;
   }
 
-  positionsCount.textContent = data.length;
-
   data.forEach(o => {
-    const pnl = parseFloat(o.unrealizedProfit || 0);
-    const pnlClass = pnl > 0 ? 'green' : pnl < 0 ? 'red' : '';
-    const roi = ((pnl / parseFloat(o.initialMargin || 1)) * 100).toFixed(2);
-
-    const card = document.createElement('div');
-    card.className = 'position-card';
-    card.innerHTML = `
-      <div class="position-header">
-        <div class="symbol">${o.symbol}</div>
-        <div class="pnl \( {pnlClass}"> \){pnl.toFixed(2)}</div>
-      </div>
-      <div class="roi \( {pnlClass}"> \){roi}%</div>
-      <div class="details">
-        <div><span class="detail-label">Размер:</span> <span class="detail-value">${o.positionAmt}</span></div>
-        <div><span class="detail-label">Маржа:</span> <span class="detail-value">${o.initialMargin || 'N/A'}</span></div>
-        <div><span class="detail-label">Цена входа:</span> <span class="detail-value">${o.entryPrice || 'N/A'}</span></div>
-        <div><span class="detail-label">Цена маркировки:</span> <span class="detail-value">${o.markPrice || 'N/A'}</span></div>
-      </div>
+    const sideClass = o.side === 'BUY' ? 'order-side-buy' : 'order-side-sell';
+    const item = document.createElement('div');
+    item.className = 'order-item';
+    item.innerHTML = `
+      <div class="order-symbol">${o.symbol}</div>
+      <div>Сторона: <span class="\( {sideClass}"> \){o.side}</span></div>
+      <div>Кількість: ${o.origQty}</div>
+      <div>Ціна/Тип: ${o.price !== "0.00000000" ? o.price : o.type}</div>
+      <div>Статус: ${o.status}</div>
+      <div>Час: ${new Date(o.time).toLocaleString('uk-UA')}</div>
     `;
-    positionsList.appendChild(card);
+    ordersList.appendChild(item);
   });
 }
 
 async function checkOrders() {
   const apiKey = document.getElementById('apiKey').value.trim();
   const secret = document.getElementById('secret').value.trim();
-  const botToken = document.getElementById('botToken').value.trim();
-  const chatId = document.getElementById('chatId').value.trim();
 
   if (!apiKey || !secret) {
-    log("Enter Binance keys");
+    setStatus("введіть ключі", "#d32f2f");
     return;
   }
 
@@ -314,13 +222,13 @@ async function checkOrders() {
 
     if (!resp.ok) {
       const err = await resp.text();
-      log("Binance error: " + err);
+      setStatus("помилка Binance", "#d32f2f");
       return;
     }
 
     const data = await resp.json();
 
-    updatePositions(data);
+    updateOrders(data);
 
     const currentIds = new Set(data.map(o => o.orderId));
     const newIds = [...currentIds].filter(id => !previousOrderIds.has(id));
@@ -328,29 +236,19 @@ async function checkOrders() {
     previousOrderIds = currentIds;
 
     if (newIds.length > 0) {
-      log("New orders (" + newIds.length + ")");
-      data.filter(o => newIds.includes(o.orderId)).forEach(o => {
-        const msg = `NEW ORDER\nSymbol: ${o.symbol}\nSide: ${o.side}\nQty: ${o.origQty}\nPrice: ${o.price || o.type}\nStatus: ${o.status}`;
-        log(msg);
-        if (botToken && chatId) {
-          fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: msg })
-          }).catch(err => log("Telegram error: " + err.message));
-        }
-      });
+      setStatus("нові ордери!", "#ff9800");
+      // Тут можна додати звук або вібрацію, якщо потрібно
     } else {
-      log("No new orders");
+      setStatus("працює", "#00c087");
     }
+
   } catch (err) {
-    log("Error: " + err.message);
+    setStatus("мережева помилка", "#d32f2f");
   }
 }
 
 document.getElementById('startBtn').onclick = async () => {
-  log("Started");
-  setStatus("running");
+  setStatus("працює", "#00c087");
   previousOrderIds.clear();
   await checkOrders();
   if (intervalId) clearInterval(intervalId);
@@ -359,19 +257,27 @@ document.getElementById('startBtn').onclick = async () => {
 
 document.getElementById('stopBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
-  log("Stopped");
-  setStatus("stopped");
+  setStatus("зупинено", "#d32f2f");
 };
 
 document.getElementById('restartBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
-  logEl.textContent = "";
-  log("Restarted");
-  setStatus("restarting");
   previousOrderIds.clear();
+  setStatus("перезапуск...", "#ff9800");
   checkOrders();
   intervalId = setInterval(checkOrders, 3000);
 };
+
+// Автозапуск при збереженні ключів
+if (localStorage.getItem('apiKey') && localStorage.getItem('secret')) {
+  document.getElementById('apiKey').value = localStorage.getItem('apiKey');
+  document.getElementById('secret').value = localStorage.getItem('secret');
+  document.getElementById('botToken').value = localStorage.getItem('botToken') || '';
+  document.getElementById('chatId').value = localStorage.getItem('chatId') || '';
+  setStatus("працює", "#00c087");
+  checkOrders();
+  intervalId = setInterval(checkOrders, 3000);
+}
 </script>
 </body>
 </html>
