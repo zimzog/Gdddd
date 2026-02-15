@@ -3,108 +3,181 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ретранслятор сигналів Binance</title>
+  <title>Binance Ордери + Ретранслятор</title>
   <style>
     body {
       margin: 0;
       font-family: system-ui, sans-serif;
-      background: #0f1217;
-      color: #e0e0e0;
+      background: #f5f5f5;
+      color: #000;
       min-height: 100vh;
-      padding: 20px;
-      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
     }
-    h1 {
-      color: #00d084;
+    header {
+      background: #000;
+      color: #ffeb3b;
+      padding: 12px 16px;
       text-align: center;
-      margin: 0 0 24px;
+      font-size: 1.3em;
+      font-weight: 600;
+      border-bottom: 3px solid #ffeb3b;
     }
-    .card {
-      background: #1a1f27;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    .container {
+      padding: 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 100%;
+    }
+    .settings-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .settings-header {
+      background: #ffeb3b;
+      color: #000;
+      padding: 10px;
+      font-weight: bold;
+      font-size: 1em;
+      text-align: center;
+      cursor: pointer;
+    }
+    .settings-body {
+      padding: 12px;
+      display: none;
+    }
+    .settings-body.active {
+      display: block;
     }
     label {
       display: block;
-      margin: 12px 0 6px;
-      font-size: 0.95em;
-      color: #a0a0a0;
+      margin: 8px 0 4px;
+      font-size: 0.85em;
+      color: #444;
     }
     input {
       width: 100%;
-      padding: 12px;
-      font-size: 1em;
-      background: #11151c;
-      border: 1px solid #2a2f36;
-      border-radius: 8px;
-      color: #e0e0e0;
+      padding: 10px;
+      font-size: 0.9em;
+      background: #f9f9f9;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      color: #000;
       box-sizing: border-box;
     }
-    input::placeholder { color: #5c6770; }
-    .btn {
-      width: 100%;
-      padding: 14px;
-      font-size: 1.1em;
-      font-weight: bold;
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin: 12px 0;
+    }
+    button {
+      flex: 1;
+      padding: 12px;
+      font-size: 1em;
+      font-weight: 600;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      margin: 12px 0;
-      transition: 0.2s;
     }
-    .start { background: #00d084; color: #000; }
-    .stop  { background: #f44336; color: white; }
-    .restart { background: #ff9800; color: #000; }
-    .btn:active { opacity: 0.85; }
+    .start { background: #ffeb3b; color: #000; }
+    .stop  { background: #d32f2f; color: white; }
+    .restart { background: #ffb300; color: #000; }
+    button:active { opacity: 0.85; }
     #status {
       text-align: center;
       font-weight: bold;
-      margin: 16px 0;
-      font-size: 1.2em;
+      margin: 10px 0;
+      font-size: 1.1em;
+      color: #333;
     }
-    #log {
-      background: #11151c;
-      border: 1px solid #2a2f36;
+    .orders-section {
+      background: #fff;
+      border: 1px solid #ddd;
       border-radius: 10px;
       padding: 12px;
-      height: 180px;
-      overflow-y: auto;
-      font-family: monospace;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .orders-title {
+      font-size: 1em;
+      color: #000;
+      margin: 0 0 8px;
+      font-weight: bold;
+    }
+    .order-item {
+      border-bottom: 1px solid #eee;
+      padding: 8px 0;
       font-size: 0.9em;
-      white-space: pre-wrap;
-      color: #00d084;
+    }
+    .order-item:last-child { border-bottom: none; }
+    .order-symbol { font-weight: bold; color: #000; }
+    .buy { color: #00c087; font-weight: bold; }
+    .sell { color: #f6465d; font-weight: bold; }
+    .no-orders {
+      text-align: center;
+      color: #777;
+      padding: 16px 0;
+      font-size: 0.9em;
     }
   </style>
 </head>
 <body>
 
-<h1>Ретранслятор сигналів Binance</h1>
+<header>Binance Ордери + Ретранслятор</header>
 
-<div class="card">
-  <label>API Key джерела (перший акаунт)</label>
-  <input type="text" id="sourceApiKey" placeholder="Встав API Key джерела" autocomplete="off"/>
+<div class="container">
+  <div class="settings-card">
+    <div class="settings-header" id="settingsToggle">Налаштування ключів ▼</div>
+    <div class="settings-body" id="settingsBody">
+      <label>Джерело API Key</label>
+      <input type="text" id="sourceApiKey" placeholder="API Key першого акаунту" autocomplete="off"/>
 
-  <label>Secret Key джерела</label>
-  <input type="password" id="sourceSecret" placeholder="Встав Secret Key джерела" autocomplete="off"/>
+      <label>Джерело Secret Key</label>
+      <input type="password" id="sourceSecret" placeholder="Secret Key першого акаунту" autocomplete="off"/>
 
-  <label>API Key приймача (другий акаунт)</label>
-  <input type="text" id="targetApiKey" placeholder="Встав API Key приймача" autocomplete="off"/>
+      <label>Приймач API Key</label>
+      <input type="text" id="targetApiKey" placeholder="API Key другого акаунту" autocomplete="off"/>
 
-  <label>Secret Key приймача</label>
-  <input type="password" id="targetSecret" placeholder="Встав Secret Key приймача" autocomplete="off"/>
+      <label>Приймач Secret Key</label>
+      <input type="password" id="targetSecret" placeholder="Secret Key другого акаунту" autocomplete="off"/>
+
+      <label>Telegram Bot Token (опціонально)</label>
+      <input type="text" id="botToken" placeholder="123456789:ABCdef..." autocomplete="off"/>
+
+      <label>Telegram Chat ID (опціонально)</label>
+      <input type="text" id="chatId" placeholder="123456789" autocomplete="off"/>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button id="startBtn" class="start">START</button>
+    <button id="stopBtn" class="stop">STOP</button>
+    <button id="restartBtn" class="restart">RESTART</button>
+  </div>
 
   <div id="status">Статус: зупинено</div>
 
-  <button id="startBtn" class="btn start">ЗАПУСТИТИ РЕТРАНСЛЯЦІЮ</button>
-  <button id="stopBtn" class="btn stop" disabled>ЗУПИНИТИ</button>
+  <div class="orders-section">
+    <div class="orders-title">Ордери на покупку</div>
+    <div id="buyOrdersList">
+      <div class="no-orders">Немає ордерів на покупку</div>
+    </div>
+  </div>
 
-  <div id="log">Лог з'явиться тут...</div>
+  <div class="orders-section">
+    <div class="orders-title">Ордери на продаж</div>
+    <div id="sellOrdersList">
+      <div class="no-orders">Немає ордерів на продаж</div>
+    </div>
+  </div>
 </div>
 
 <script>
-// Правильна HMAC-SHA256
+// HMAC-SHA256
 async function hmacSHA256(key, data) {
   try {
     const encoder = new TextEncoder();
@@ -129,35 +202,58 @@ async function hmacSHA256(key, data) {
 }
 
 let intervalId = null;
-let lastOrderIds = new Set();
+let previousOrderIds = new Set();
+const buyOrdersList = document.getElementById('buyOrdersList');
+const sellOrdersList = document.getElementById('sellOrdersList');
+const statusEl = document.getElementById('status');
 
-function log(msg) {
-  const time = new Date().toLocaleTimeString();
-  document.getElementById('log').innerHTML += `[${time}] ${msg}<br>`;
-  document.getElementById('log').scrollTop = document.getElementById('log').scrollHeight;
+function setStatus(text, color = '#000') {
+  statusEl.textContent = `Статус: ${text}`;
+  statusEl.style.color = color;
 }
 
-function setStatus(text, color = '#888') {
-  document.getElementById('status').textContent = `Статус: ${text}`;
-  document.getElementById('status').style.color = color;
-}
+function updateOrders(data) {
+  buyOrdersList.innerHTML = '';
+  sellOrdersList.innerHTML = '';
 
-async function getOpenOrders(apiKey, secret) {
-  const ts = Date.now();
-  const query = `timestamp=${ts}`;
-  const signature = await hmacSHA256(secret, query);
-  const url = `https://fapi.binance.com/fapi/v1/openOrders?\( {query}&signature= \){signature}`;
+  let buyCount = 0;
+  let sellCount = 0;
 
-  const resp = await fetch(url, {
-    method: 'GET',
-    headers: { 'X-MBX-APIKEY': apiKey }
+  if (data.length === 0) {
+    buyOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на покупку</div>';
+    sellOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на продаж</div>';
+    return;
+  }
+
+  data.forEach(o => {
+    const sideText = o.side === 'BUY' ? 'Покупка' : 'Продаж';
+    const sideClass = o.side === 'BUY' ? 'buy' : 'sell';
+
+    const item = document.createElement('div');
+    item.className = 'order-item';
+    item.innerHTML = `
+      <div class="order-symbol">${o.symbol}</div>
+      <div>Сторона: <span class="\( {sideClass}"> \){sideText}</span></div>
+      <div>Кількість: ${o.origQty}</div>
+      <div>Ціна/Тип: ${o.price !== "0.00000000" ? o.price : o.type}</div>
+      <div>Статус: ${o.status}</div>
+      <div>Час: ${new Date(o.time).toLocaleString('uk-UA')}</div>
+    `;
+
+    if (o.side === 'BUY') {
+      buyOrdersList.appendChild(item);
+      buyCount++;
+    } else {
+      sellOrdersList.appendChild(item);
+      sellCount++;
+    }
   });
 
-  if (!resp.ok) throw new Error(await resp.text());
-  return await resp.json();
+  if (buyCount === 0) buyOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на покупку</div>';
+  if (sellCount === 0) sellOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на продаж</div>';
 }
 
-async function placeOrder(targetApiKey, targetSecret, order) {
+async function duplicateOrder(targetApiKey, targetSecret, order) {
   const ts = Date.now();
   const params = new URLSearchParams({
     symbol: order.symbol,
@@ -182,74 +278,111 @@ async function placeOrder(targetApiKey, targetSecret, order) {
 
   if (!resp.ok) {
     const err = await resp.text();
-    log(`Помилка дублювання ордера: ${err}`);
+    log("Помилка дублювання: " + err);
     return false;
   }
 
-  log(`Ордер успішно дубльовано: ${order.symbol} ${order.side} ${order.origQty}`);
+  log(`Ордер дубльовано: ${order.symbol} ${order.side} ${order.origQty}`);
   return true;
 }
 
-async function monitor() {
+async function checkOrders() {
   const sourceApiKey = document.getElementById('sourceApiKey').value.trim();
   const sourceSecret = document.getElementById('sourceSecret').value.trim();
   const targetApiKey = document.getElementById('targetApiKey').value.trim();
   const targetSecret = document.getElementById('targetSecret').value.trim();
 
-  if (!sourceApiKey || !sourceSecret || !targetApiKey || !targetSecret) {
-    setStatus("введіть усі ключі", "#f44336");
+  if (!sourceApiKey || !sourceSecret) {
+    setStatus("введіть ключі джерела", "#d32f2f");
     return;
   }
 
   try {
-    const orders = await getOpenOrders(sourceApiKey, sourceSecret);
-    const currentIds = new Set(orders.map(o => o.orderId));
+    const ts = Date.now();
+    const query = "timestamp=" + ts;
+    const signature = await hmacSHA256(sourceSecret, query);
 
-    const newIds = [...currentIds].filter(id => !lastOrderIds.has(id));
+    const url = "https://fapi.binance.com/fapi/v1/openOrders?" + query + "&signature=" + signature;
 
-    if (newIds.length > 0) {
-      log(`Виявлено ${newIds.length} нових ордерів`);
+    const resp = await fetch(url, {
+      method: 'GET',
+      headers: { 'X-MBX-APIKEY': sourceApiKey }
+    });
+
+    if (!resp.ok) {
+      const err = await resp.text();
+      setStatus("помилка Binance", "#d32f2f");
+      return;
+    }
+
+    const data = await resp.json();
+    updateOrders(data);
+
+    const currentIds = new Set(data.map(o => o.orderId));
+    const newIds = [...currentIds].filter(id => !previousOrderIds.has(id));
+
+    if (newIds.length > 0 && targetApiKey && targetSecret) {
+      setStatus("нові ордери — дублюю...", "#ffb300");
       for (const id of newIds) {
-        const order = orders.find(o => o.orderId === id);
+        const order = data.find(o => o.orderId === id);
         if (order) {
-          await placeOrder(targetApiKey, targetSecret, order);
+          await duplicateOrder(targetApiKey, targetSecret, order);
         }
       }
     }
 
-    lastOrderIds = currentIds;
-    setStatus("працює", "#00c087");
+    previousOrderIds = currentIds;
+
+    if (newIds.length === 0) {
+      setStatus("працює", "#00c087");
+    }
   } catch (err) {
-    setStatus("помилка", "#f44336");
-    log("Помилка: " + err.message);
+    setStatus("мережева помилка", "#d32f2f");
   }
 }
 
-document.getElementById('startBtn').onclick = () => {
+document.getElementById('startBtn').onclick = async () => {
   setStatus("працює", "#00c087");
-  lastOrderIds.clear();
-  monitor();
-  intervalId = setInterval(monitor, 5000); // 5 секунд — безпечно
-  document.getElementById('startBtn').disabled = true;
-  document.getElementById('stopBtn').disabled = false;
+  previousOrderIds.clear();
+  await checkOrders();
+  if (intervalId) clearInterval(intervalId);
+  intervalId = setInterval(checkOrders, 3000);
 };
 
 document.getElementById('stopBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
-  setStatus("зупинено", "#888");
-  document.getElementById('startBtn').disabled = false;
-  document.getElementById('stopBtn').disabled = true;
+  setStatus("зупинено", "#d32f2f");
 };
 
 document.getElementById('restartBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
-  lastOrderIds.clear();
-  log("Перезапуск...");
-  monitor();
-  intervalId = setInterval(monitor, 5000);
-  document.getElementById('startBtn').disabled = true;
-  document.getElementById('stopBtn').disabled = false;
+  previousOrderIds.clear();
+  setStatus("перезапуск...", "#ffb300");
+  checkOrders();
+  intervalId = setInterval(checkOrders, 3000);
 };
+
+// Акордеон
+document.getElementById('settingsToggle').onclick = () => {
+  const body = document.getElementById('settingsBody');
+  body.classList.toggle('active');
+  document.getElementById('settingsToggle').textContent = body.classList.contains('active') 
+    ? "Налаштування ключів ▲" 
+    : "Налаштування ключів ▼";
+};
+
+// Автозапуск
+if (localStorage.getItem('sourceApiKey') && localStorage.getItem('sourceSecret')) {
+  document.getElementById('sourceApiKey').value = localStorage.getItem('sourceApiKey');
+  document.getElementById('sourceSecret').value = localStorage.getItem('sourceSecret');
+  document.getElementById('targetApiKey').value = localStorage.getItem('targetApiKey') || '';
+  document.getElementById('targetSecret').value = localStorage.getItem('targetSecret') || '';
+  document.getElementById('botToken').value = localStorage.getItem('botToken') || '';
+  document.getElementById('chatId').value = localStorage.getItem('chatId') || '';
+  setStatus("працює", "#00c087");
+  checkOrders();
+  intervalId = setInterval(checkOrders, 3000);
+}
 </script>
 </body>
 </html>
