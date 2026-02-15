@@ -3,59 +3,52 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Binance Monitor</title>
+  <title>Binance Ордери</title>
   <style>
     body {
       margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e0e0e0 100%);
-      color: #111;
+      background: #f5f5f5;
+      color: #000;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
     header {
-      background: linear-gradient(to right, #000, #1a1a1a);
+      background: #000;
       color: #ffeb3b;
-      padding: 16px;
+      padding: 12px 16px;
       text-align: center;
-      font-size: 1.5em;
-      font-weight: 700;
-      border-bottom: 4px solid #ffeb3b;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      font-size: 1.3em;
+      font-weight: 600;
+      border-bottom: 3px solid #ffeb3b;
     }
     .container {
-      padding: 20px;
+      padding: 12px;
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 20px;
-      max-width: 600px;
-      margin: 0 auto;
-      width: 100%;
+      gap: 12px;
+      max-width: 100%;
     }
     .settings-card {
-      background: white;
-      border-radius: 16px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
       overflow: hidden;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-      border: 1px solid #eee;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
     .settings-header {
       background: #ffeb3b;
       color: #000;
-      padding: 14px;
-      font-weight: 700;
-      font-size: 1.1em;
+      padding: 10px;
+      font-weight: bold;
+      font-size: 1em;
       text-align: center;
       cursor: pointer;
-      transition: background 0.3s;
-    }
-    .settings-header:hover {
-      background: #ffd54f;
     }
     .settings-body {
-      padding: 16px;
+      padding: 12px;
       display: none;
     }
     .settings-body.active {
@@ -63,77 +56,72 @@
     }
     label {
       display: block;
-      margin: 12px 0 6px;
-      font-size: 0.95em;
+      margin: 8px 0 4px;
+      font-size: 0.85em;
       color: #444;
-      font-weight: 500;
     }
     input {
       width: 100%;
-      padding: 12px 14px;
-      font-size: 1em;
+      padding: 10px;
+      font-size: 0.9em;
       background: #f9f9f9;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      color: #111;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      color: #000;
       box-sizing: border-box;
-      transition: border 0.3s;
-    }
-    input:focus {
-      border-color: #ffeb3b;
-      outline: none;
     }
     .btn-row {
       display: flex;
-      gap: 10px;
-      margin-top: 20px;
+      gap: 8px;
+      margin: 12px 0;
     }
     button {
       flex: 1;
-      padding: 16px;
-      font-size: 1.1em;
-      font-weight: 700;
+      padding: 12px;
+      font-size: 1em;
+      font-weight: 600;
       border: none;
-      border-radius: 12px;
+      border-radius: 8px;
       cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     .start { background: #ffeb3b; color: #000; }
-    .stop  { background: #ef5350; color: white; }
+    .stop  { background: #d32f2f; color: white; }
     .restart { background: #ffb300; color: #000; }
-    button:active {
-      transform: translateY(2px);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-    }
+    button:active { opacity: 0.85; }
     #status {
       text-align: center;
-      font-size: 1.3em;
       font-weight: bold;
-      margin: 16px 0;
+      margin: 10px 0;
+      font-size: 1.1em;
+      color: #333;
+    }
+    .orders-section {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
       padding: 12px;
-      border-radius: 12px;
-      background: #fff;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    #log {
-      background: #fff;
-      border: 1px solid #eee;
-      border-radius: 12px;
-      padding: 16px;
-      flex: 1;
-      overflow-y: auto;
-      font-family: monospace;
-      font-size: 0.95em;
-      white-space: pre-wrap;
-      color: #222;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      line-height: 1.5;
-    }
-    .log-header {
-      font-weight: bold;
+    .orders-title {
+      font-size: 1em;
       color: #000;
-      margin-bottom: 8px;
+      margin: 0 0 8px;
+      font-weight: bold;
+    }
+    .order-item {
+      border-bottom: 1px solid #eee;
+      padding: 8px 0;
+      font-size: 0.9em;
+    }
+    .order-item:last-child { border-bottom: none; }
+    .order-symbol { font-weight: bold; color: #000; }
+    .buy { color: #00c087; font-weight: bold; }
+    .sell { color: #f6465d; font-weight: bold; }
+    .no-orders {
+      text-align: center;
+      color: #777;
+      padding: 16px 0;
+      font-size: 0.9em;
     }
   </style>
 </head>
@@ -167,9 +155,18 @@
 
   <div id="status">Статус: зупинено</div>
 
-  <div id="log">
-    <div class="log-header">Лог моніторингу</div>
-    Waiting... Натисни START
+  <div class="orders-section">
+    <div class="orders-title">Ордери на покупку</div>
+    <div id="buyOrdersList">
+      <div class="no-orders">Немає ордерів на покупку</div>
+    </div>
+  </div>
+
+  <div class="orders-section">
+    <div class="orders-title">Ордери на продаж</div>
+    <div id="sellOrdersList">
+      <div class="no-orders">Немає ордерів на продаж</div>
+    </div>
   </div>
 </div>
 
@@ -199,18 +196,55 @@ async function hmacSHA256(key, data) {
 }
 
 let intervalId = null;
-const logEl = document.getElementById('log');
+let previousOrderIds = new Set();
+const buyOrdersList = document.getElementById('buyOrdersList');
+const sellOrdersList = document.getElementById('sellOrdersList');
 const statusEl = document.getElementById('status');
-
-function log(msg) {
-  const time = new Date().toLocaleTimeString();
-  logEl.innerHTML += `<div>[${time}] ${msg}</div>`;
-  logEl.scrollTop = logEl.scrollHeight;
-}
 
 function setStatus(text, color = '#000') {
   statusEl.textContent = `Статус: ${text}`;
   statusEl.style.color = color;
+}
+
+function updateOrders(data) {
+  buyOrdersList.innerHTML = '';
+  sellOrdersList.innerHTML = '';
+
+  let buyCount = 0;
+  let sellCount = 0;
+
+  if (data.length === 0) {
+    buyOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на покупку</div>';
+    sellOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на продаж</div>';
+    return;
+  }
+
+  data.forEach(o => {
+    const sideText = o.side === 'BUY' ? 'Покупка' : 'Продаж';
+    const sideClass = o.side === 'BUY' ? 'buy' : 'sell';
+
+    const item = document.createElement('div');
+    item.className = 'order-item';
+    item.innerHTML = `
+      <div class="order-symbol">${o.symbol}</div>
+      <div>Сторона: <span class="\( {sideClass}"> \){sideText}</span></div>
+      <div>Кількість: ${o.origQty}</div>
+      <div>Ціна/Тип: ${o.price !== "0.00000000" ? o.price : o.type}</div>
+      <div>Статус: ${o.status}</div>
+      <div>Час: ${new Date(o.time).toLocaleString('uk-UA')}</div>
+    `;
+
+    if (o.side === 'BUY') {
+      buyOrdersList.appendChild(item);
+      buyCount++;
+    } else {
+      sellOrdersList.appendChild(item);
+      sellCount++;
+    }
+  });
+
+  if (buyCount === 0) buyOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на покупку</div>';
+  if (sellCount === 0) sellOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на продаж</div>';
 }
 
 async function checkOrders() {
@@ -237,32 +271,30 @@ async function checkOrders() {
     if (!resp.ok) {
       const err = await resp.text();
       setStatus("помилка Binance", "#d32f2f");
-      log("Помилка: " + err);
       return;
     }
 
     const data = await resp.json();
+    updateOrders(data);
 
-    if (data.length === 0) {
-      log("Відкритих ордерів немає");
+    const currentIds = new Set(data.map(o => o.orderId));
+    const newIds = [...currentIds].filter(id => !previousOrderIds.has(id));
+
+    previousOrderIds = currentIds;
+
+    if (newIds.length > 0) {
+      setStatus("нові ордери", "#ffb300");
     } else {
-      log("Знайдено відкритих ордерів: " + data.length);
-      data.forEach(o => {
-        const sideText = o.side === 'BUY' ? 'Покупка' : 'Продаж';
-        log(`${o.symbol} | ${sideText} | Кількість: ${o.origQty} | Ціна: ${o.price || o.type} | Статус: ${o.status}`);
-      });
+      setStatus("працює", "#00c087");
     }
-
-    setStatus("працює", "#00c087");
   } catch (err) {
     setStatus("мережева помилка", "#d32f2f");
-    log("Помилка: " + err.message);
   }
 }
 
 document.getElementById('startBtn').onclick = async () => {
   setStatus("працює", "#00c087");
-  log("Моніторинг запущено");
+  previousOrderIds.clear();
   await checkOrders();
   if (intervalId) clearInterval(intervalId);
   intervalId = setInterval(checkOrders, 3000);
@@ -271,13 +303,11 @@ document.getElementById('startBtn').onclick = async () => {
 document.getElementById('stopBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
   setStatus("зупинено", "#d32f2f");
-  log("Моніторинг зупинено");
 };
 
 document.getElementById('restartBtn').onclick = () => {
   if (intervalId) clearInterval(intervalId);
-  logEl.innerHTML = '<div class="log-header">Лог моніторингу</div>';
-  log("Перезапуск...");
+  previousOrderIds.clear();
   setStatus("перезапуск...", "#ffb300");
   checkOrders();
   intervalId = setInterval(checkOrders, 3000);
