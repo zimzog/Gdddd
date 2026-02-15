@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Binance Ордери</title>
+  <title>Binance Ордери Монітор</title>
   <style>
     body {
       margin: 0;
@@ -96,29 +96,33 @@
       font-size: 1.1em;
       color: #333;
     }
-    .orders-section {
+    .section {
       background: #fff;
       border: 1px solid #ddd;
       border-radius: 12px;
       padding: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
-    .orders-title {
+    .section-title {
       font-size: 1.1em;
       color: #000;
       margin: 0 0 8px;
       font-weight: bold;
+      display: flex;
+      justify-content: space-between;
     }
-    .order-item {
+    .order-item, .position-item {
       border-bottom: 1px solid #eee;
       padding: 10px 0;
       font-size: 0.9em;
     }
-    .order-item:last-child { border-bottom: none; }
-    .order-symbol { font-weight: bold; color: #000; }
+    .order-item:last-child, .position-item:last-child { border-bottom: none; }
+    .symbol { font-weight: bold; color: #000; }
     .buy { color: #00c087; font-weight: bold; }
     .sell { color: #f6465d; font-weight: bold; }
-    .no-orders {
+    .pnl-positive { color: #00c087; font-weight: bold; }
+    .pnl-negative { color: #f6465d; font-weight: bold; }
+    .no-items {
       text-align: center;
       color: #777;
       padding: 20px 0;
@@ -155,24 +159,31 @@
 
   <div id="status">Статус: зупинено</div>
 
-  <div class="orders-section">
-    <div class="orders-title">Відкриті ордери</div>
+  <div class="section">
+    <div class="section-title">Позиції</div>
+    <div id="positionsList">
+      <div class="no-items">Немає відкритих позицій</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Відкриті ордери</div>
     <div id="ordersList">
-      <div class="no-orders">Натисни START для моніторингу</div>
+      <div class="no-items">Немає відкритих ордерів</div>
     </div>
   </div>
 
-  <div class="orders-section">
-    <div class="orders-title">Ордери на покупку</div>
+  <div class="section">
+    <div class="section-title">Ордери на покупку</div>
     <div id="buyOrdersList">
-      <div class="no-orders">Немає ордерів на покупку</div>
+      <div class="no-items">Немає ордерів на покупку</div>
     </div>
   </div>
 
-  <div class="orders-section">
-    <div class="orders-title">Ордери на продаж</div>
+  <div class="section">
+    <div class="section-title">Ордери на продаж</div>
     <div id="sellOrdersList">
-      <div class="no-orders">Немає ордерів на продаж</div>
+      <div class="no-items">Немає ордерів на продаж</div>
     </div>
   </div>
 </div>
@@ -204,6 +215,7 @@ async function hmacSHA256(key, data) {
 
 let intervalId = null;
 let previousOrderIds = new Set();
+const positionsList = document.getElementById('positionsList');
 const ordersList = document.getElementById('ordersList');
 const buyOrdersList = document.getElementById('buyOrdersList');
 const sellOrdersList = document.getElementById('sellOrdersList');
@@ -214,15 +226,17 @@ function setStatus(text, color = '#000') {
   statusEl.style.color = color;
 }
 
-function updateOrders(data) {
+function updatePositionsAndOrders(data) {
+  positionsList.innerHTML = '';
   ordersList.innerHTML = '';
   buyOrdersList.innerHTML = '';
   sellOrdersList.innerHTML = '';
 
   if (data.length === 0) {
-    ordersList.innerHTML = '<div class="no-orders">Відкритих ордерів немає</div>';
-    buyOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на покупку</div>';
-    sellOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на продаж</div>';
+    positionsList.innerHTML = '<div class="no-items">Немає відкритих позицій</div>';
+    ordersList.innerHTML = '<div class="no-items">Немає відкритих ордерів</div>';
+    buyOrdersList.innerHTML = '<div class="no-items">Немає ордерів на покупку</div>';
+    sellOrdersList.innerHTML = '<div class="no-items">Немає ордерів на продаж</div>';
     return;
   }
 
@@ -255,8 +269,8 @@ function updateOrders(data) {
     }
   });
 
-  if (buyCount === 0) buyOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на покупку</div>';
-  if (sellCount === 0) sellOrdersList.innerHTML = '<div class="no-orders">Немає ордерів на продаж</div>';
+  if (buyCount === 0) buyOrdersList.innerHTML = '<div class="no-items">Немає ордерів на покупку</div>';
+  if (sellCount === 0) sellOrdersList.innerHTML = '<div class="no-items">Немає ордерів на продаж</div>';
 }
 
 async function checkOrders() {
@@ -287,7 +301,7 @@ async function checkOrders() {
     }
 
     const data = await resp.json();
-    updateOrders(data);
+    updatePositionsAndOrders(data);
 
     const currentIds = new Set(data.map(o => o.orderId));
     const newIds = [...currentIds].filter(id => !previousOrderIds.has(id));
